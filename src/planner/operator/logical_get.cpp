@@ -2,13 +2,13 @@
 
 #include "duckdb/catalog/catalog_entry/table_catalog_entry.hpp"
 #include "duckdb/catalog/catalog_entry/table_function_catalog_entry.hpp"
+#include "duckdb/common/serializer/deserializer.hpp"
+#include "duckdb/common/serializer/serializer.hpp"
 #include "duckdb/common/string_util.hpp"
 #include "duckdb/function/function_serialization.hpp"
 #include "duckdb/function/table/table_scan.hpp"
 #include "duckdb/main/config.hpp"
 #include "duckdb/storage/data_table.hpp"
-#include "duckdb/common/serializer/serializer.hpp"
-#include "duckdb/common/serializer/deserializer.hpp"
 
 namespace duckdb {
 
@@ -132,6 +132,7 @@ void LogicalGet::Serialize(Serializer &serializer) const {
 	serializer.WriteProperty(203, "column_ids", column_ids);
 	serializer.WriteProperty(204, "projection_ids", projection_ids);
 	serializer.WriteProperty(205, "table_filters", table_filters);
+	serializer.WriteProperty(206, "ordinality_column_idx", ordinality_column_idx);
 	FunctionSerializer::Serialize(serializer, function, bind_data.get());
 	if (!function.serialize) {
 		D_ASSERT(!function.serialize);
@@ -152,6 +153,7 @@ unique_ptr<LogicalOperator> LogicalGet::Deserialize(Deserializer &deserializer) 
 	deserializer.ReadProperty(203, "column_ids", result->column_ids);
 	deserializer.ReadProperty(204, "projection_ids", result->projection_ids);
 	deserializer.ReadProperty(205, "table_filters", result->table_filters);
+	deserializer.ReadProperty(206, "ordinality_column_idx", result->ordinality_column_idx);
 	auto entry = FunctionSerializer::DeserializeBase<TableFunction, TableFunctionCatalogEntry>(
 	    deserializer, CatalogType::TABLE_FUNCTION_ENTRY);
 	result->function = entry.first;
