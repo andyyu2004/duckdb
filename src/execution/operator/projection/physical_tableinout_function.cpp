@@ -73,6 +73,7 @@ OperatorResultType PhysicalTableInOutFunction::Execute(ExecutionContext &context
 			// finished processing this chunk
 			state.new_row = true;
 			state.row_index = 0;
+			state.ordinal = 1;
 			return OperatorResultType::NEED_MORE_INPUT;
 		}
 		// we are processing a new row: fetch the data for the current row

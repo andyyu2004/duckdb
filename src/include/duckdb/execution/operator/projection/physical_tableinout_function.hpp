@@ -33,7 +33,8 @@ public:
 	                                        OperatorState &state) const override;
 
 	bool ParallelOperator() const override {
-		return true;
+		// parallelism WITH ORDINALITY is not implemented
+		return ordinality_column_idx == 0;
 	}
 
 	bool RequiresFinalExecute() const override {
