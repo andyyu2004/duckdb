@@ -29,6 +29,10 @@ PhysicalTableInOutFunction::PhysicalTableInOutFunction(vector<LogicalType> types
     : PhysicalOperator(PhysicalOperatorType::INOUT_FUNCTION, std::move(types), estimated_cardinality),
       function(std::move(function_p)), bind_data(std::move(bind_data_p)), column_ids(std::move(column_ids_p)),
       projected_input(std::move(project_input_p)), ordinality_column_idx(ordinality_column_idx) {
+	if (ordinality_column_idx != 0) {
+		// drop the ordinality column from the column ids as it's added by the operator not the underlying function
+		column_ids.erase(column_ids.begin() + ordinality_column_idx);
+	}
 }
 
 unique_ptr<OperatorState> PhysicalTableInOutFunction::GetOperatorState(ExecutionContext &context) const {

@@ -2,7 +2,6 @@
 
 #include "duckdb/catalog/catalog_entry/table_catalog_entry.hpp"
 #include "duckdb/common/string_util.hpp"
-#include "duckdb/planner/expression/bound_conjunction_expression.hpp"
 #include "duckdb/transaction/transaction.hpp"
 
 #include <utility>
@@ -19,6 +18,10 @@ PhysicalTableScan::PhysicalTableScan(vector<LogicalType> types, TableFunction fu
       function(std::move(function_p)), bind_data(std::move(bind_data_p)), returned_types(std::move(returned_types_p)),
       column_ids(std::move(column_ids_p)), projection_ids(std::move(projection_ids_p)), names(std::move(names_p)),
       table_filters(std::move(table_filters_p)), extra_info(extra_info), ordinality_column_idx(ordinality_column_idx) {
+	if (ordinality_column_idx != 0) {
+		// drop the ordinality column from the column ids as it's added by the operator not the underlying function
+		column_ids.erase(column_ids.begin() + ordinality_column_idx);
+	}
 }
 
 class TableScanGlobalSourceState : public GlobalSourceState {
