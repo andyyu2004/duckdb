@@ -233,3 +233,16 @@ SELECT * FROM repeat_row(1, 2, 'foo', num_rows=3) WITH ORDINALITY
 1	2	foo	1
 1	2	foo	2
 1	2	foo	3
+
+query II
+SELECT string_split(p, '/'), ord FROM glob('test/sql/copy/csv/data/glob/a?/a2.csv') WITH ORDINALITY _(p, ord)
+----
+[test, sql, copy, csv, data, glob, a2, a2.csv]	1
+
+query II
+SELECT string_split(p, '/'), ord FROM glob('test/sql/copy/csv/data/glob/a*/*.csv') WITH ORDINALITY _(p, ord)
+----
+[test, sql, copy, csv, data, glob, a1, a1.csv]	1
+[test, sql, copy, csv, data, glob, a2, a2.csv]	2
+[test, sql, copy, csv, data, glob, a3, b1.csv]	3
+
