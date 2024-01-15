@@ -50,3 +50,168 @@ SELECT * FROM (SELECT [2, 3, 4]) t(l), UNNEST(l) WITH ORDINALITY t2(k, ord) ORDE
 [2, 3, 4]	2	1
 [2, 3, 4]	3	2
 [2, 3, 4]	4	3
+
+# range with a single parameter
+query II
+SELECT * from range(3) with ordinality;
+----
+0	1
+1	2
+2	3
+
+query II
+SELECT * from generate_series(3) with ordinality;
+----
+0	1
+1	2
+2	3
+3	4
+
+query II
+SELECT range(CASE WHEN i%2=0 THEN NULL ELSE i END),e FROM range(6) with ordinality tbl(i,e);
+----
+NULL	1
+[0]	2
+NULL	3
+[0, 1, 2]	4
+NULL	5
+[0, 1, 2, 3, 4]	6
+
+query II
+SELECT * from range(0) with ordinality;
+----
+
+query II
+SELECT * from range(NULL) with ordinality;
+----
+
+
+# range with two parameters
+query II
+SELECT * from range(1, 4) with ordinality;
+----
+1	1
+2	2
+3	3
+
+query II
+SELECT * from generate_series(1, 3) with ordinality;
+----
+1	1
+2	2
+3	3
+
+query II
+SELECT * from range(1, 1) with ordinality;
+----
+
+
+query II
+SELECT * from range(-10, -5) with ordinality;
+----
+-10	1
+-9	2
+-8	3
+-7	4
+-6	5
+
+query II
+SELECT range(i, 5),e FROM range(5) with ordinality tbl(i,e);
+----
+[0, 1, 2, 3, 4]	1
+[1, 2, 3, 4]	2
+[2, 3, 4]	3
+[3, 4]	4
+[4]	5
+
+# range with 3 parameters
+query II
+SELECT * from range(1, 6, 2) with ordinality;
+----
+1	1
+3	2
+5	3
+
+query II
+SELECT * from generate_series(1, 6, 2) with ordinality;
+----
+1	1
+3	2
+5	3
+
+# test basic repeat usage
+query II
+SELECT * FROM repeat(0, 3) with ordinality
+----
+0	1
+0	2
+0	3
+
+# NULL
+query II
+SELECT * FROM repeat(NULL, 2) with ordinality
+----
+NULL	1
+NULL	2
+
+# varchar
+query II
+SELECT * FROM repeat('hello', 2) with ordinality
+----
+hello	1
+hello	2
+
+# long varchar
+query II
+SELECT * FROM repeat('thisisalongstring', 2) with ordinality
+----
+thisisalongstring	1
+thisisalongstring	2
+
+# blob
+query II
+SELECT * FROM repeat(blob '\x00\x00hello', 2) with ordinality
+----
+\x00\x00hello	1
+\x00\x00hello	2
+
+# many values, make sure that the count keeps increasing after new data chunk is reached
+query II
+SELECT * FROM repeat(1, 10000) with ordinality
+----
+20000 values hashing to 1b3aea7f442ebe14eefecd1dbc1dbc16
+
+# date
+query II
+SELECT * FROM repeat(DATE '1992-01-01', 2) with ordinality
+----
+1992-01-01	1
+1992-01-01	2
+
+# interval
+query II
+SELECT * FROM repeat(INTERVAL '30 days', 2) with ordinality
+----
+30 days	1
+30 days	2
+
+query IIII
+SELECT * FROM repeat_row(1, 2, 'foo', num_rows=3) with ordinality
+----
+1	2	foo	1
+1	2	foo	2
+1	2	foo	3
+
+# separate ordinals per input table
+# consistent behaviour as postgres
+query II
+SELECT u, ordinality
+FROM   (SELECT range(3) UNION SELECT range(3, 5)) AS _(l),
+       unnest(l) WITH ORDINALITY AS __(u)
+ORDER BY l, u;
+----
+0	1
+1	2
+2	3
+3	1
+4	2
