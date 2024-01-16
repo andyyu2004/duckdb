@@ -64,8 +64,10 @@ public:
 	bool IsSource() const override {
 		return true;
 	}
+
 	bool ParallelSource() const override {
-		return true;
+		// parallelism WITH ORDINALITY is not supported yet
+		return ordinality_column_idx == 0;
 	}
 
 	bool SupportsBatchIndex() const override {

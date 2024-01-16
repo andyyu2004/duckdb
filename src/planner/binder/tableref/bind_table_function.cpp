@@ -205,16 +205,9 @@ Binder::BindTableFunctionInternal(TableFunction &table_function, const string &f
 	get->input_table_names = input_table_names;
 	get->ordinality_column_idx = ordinality_idx;
 	if (table_function.in_out_function && !table_function.projection_pushdown) {
-		// throw InternalException("don't go here");
 		get->column_ids.reserve(return_types.size());
 		for (idx_t i = 0; i < return_types.size(); i++) {
-			// FIXME test this path
-			// problem with read_csv is that get->column_ids includes the ordinality column which messes things up
-			// but where is it populated when it doesn't hit this path, i.e. no pushdown or not an inout function
-			// TODO put a debugger watch on the vector address?
-			if (ordinality_idx != 0 && i != ordinality_idx) {
-				get->column_ids.push_back(i);
-			}
+			get->column_ids.push_back(i);
 		}
 	}
 	// now add the table function to the bind context so its columns can be bound

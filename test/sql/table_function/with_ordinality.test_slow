@@ -2,6 +2,9 @@
 # description: Test duckdb table function with ordinality
 # group: [table_function]
 
+# statement ok
+# PRAGMA enable_verification
+
 # Test if the following behaviour is correctly implemented:
 #	- keep increasing the ordinality count if new data chunk is reached
 #	- reset ordinality count when reading from new table (like in PSQL)
@@ -10,3 +13,13 @@ query II
 SELECT * FROM (SELECT range(1,2050) UNION SELECT range(2050,6147)) AS _(l), unnest(l) with ordinality AS __(u) order by l,u;
 ----
 18438 values hashing to 8744a2b2b272fe67ec092319f9f2989d
+
+statement ok
+COPY (SELECT * FROM range(10000000) t(i)) TO '__TEST_DIR__/output.csv' (HEADER, DELIMITER ',')
+
+# ensure ordinality monotically increases and doesn't reset incorrectly
+# hence, ordinality should always be equal to i + 1
+# In particular, this checks that parallelism is disabled when ordinality is enabled for `PhysicalTableScan`
+query II
+SELECT * FROM read_csv_auto('__TEST_DIR__/output.csv') WITH ORDINALITY WHERE i + 1 != ordinality
+----
