@@ -18,17 +18,23 @@ PhysicalTableScan::PhysicalTableScan(vector<LogicalType> types, TableFunction fu
       function(std::move(function_p)), bind_data(std::move(bind_data_p)), returned_types(std::move(returned_types_p)),
       column_ids(std::move(column_ids_p)), projection_ids(std::move(projection_ids_p)), names(std::move(names_p)),
       table_filters(std::move(table_filters_p)), extra_info(extra_info), ordinality_column_idx(ordinality_column_idx) {
-	if (ordinality_column_idx != 0) {
-		// drop the ordinality column from the column ids as it's added by the operator not the underlying function
-		column_ids.erase(column_ids.begin() + ordinality_column_idx);
-	}
 }
 
 class TableScanGlobalSourceState : public GlobalSourceState {
 public:
 	TableScanGlobalSourceState(ClientContext &context, const PhysicalTableScan &op) {
 		if (op.function.init_global) {
-			TableFunctionInitInput input(op.bind_data.get(), op.column_ids, op.projection_ids, op.table_filters.get());
+			auto column_ids = op.column_ids;
+			auto projection_ids = op.projection_ids;
+			if (op.ordinality_column_idx != 0) {
+				// drop the ordinality column as it's added by the operator not the underlying function
+				// remember to keep this consistent with the local state init
+				column_ids.erase(column_ids.begin() + op.ordinality_column_idx);
+				projection_ids.erase(
+				    std::remove(projection_ids.begin(), projection_ids.end(), op.ordinality_column_idx),
+				    projection_ids.end());
+			}
+			TableFunctionInitInput input(op.bind_data.get(), column_ids, projection_ids, op.table_filters.get());
 			global_state = op.function.init_global(context, input);
 			if (global_state) {
 				max_threads = global_state->MaxThreads();
@@ -51,7 +57,17 @@ public:
 	TableScanLocalSourceState(ExecutionContext &context, TableScanGlobalSourceState &gstate,
 	                          const PhysicalTableScan &op) {
 		if (op.function.init_local) {
-			TableFunctionInitInput input(op.bind_data.get(), op.column_ids, op.projection_ids, op.table_filters.get());
+			auto column_ids = op.column_ids;
+			auto projection_ids = op.projection_ids;
+			// drop the ordinality column as it's added by the operator not the underlying function
+			// remember to keep this consistent with the global state init
+			if (op.ordinality_column_idx != 0) {
+				column_ids.erase(column_ids.begin() + op.ordinality_column_idx);
+				projection_ids.erase(
+				    std::remove(projection_ids.begin(), projection_ids.end(), op.ordinality_column_idx),
+				    projection_ids.end());
+			}
+			TableFunctionInitInput input(op.bind_data.get(), column_ids, projection_ids, op.table_filters.get());
 			local_state = op.function.init_local(context, input, gstate.global_state.get());
 		}
 	}

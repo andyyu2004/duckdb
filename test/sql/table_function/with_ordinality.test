@@ -219,7 +219,7 @@ ORDER BY l, u
 4	2
 
 statement ok
-COPY (SELECT * FROM range(0, 4) WITH ORDINALITY) TO '__TEST_DIR__/output.parquet' (HEADER, DELIMITER ',')
+COPY (SELECT * FROM range(0, 4) WITH ORDINALITY AS _(i, ord)) TO '__TEST_DIR__/output.parquet'
 
 query II
 SELECT * FROM read_parquet('__TEST_DIR__/output.parquet') WITH ORDINALITY

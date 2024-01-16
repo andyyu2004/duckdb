@@ -1,13 +1,14 @@
 #include "duckdb/optimizer/join_order/relation_statistics_helper.hpp"
-#include "duckdb/planner/expression/list.hpp"
-#include "duckdb/planner/operator/list.hpp"
-#include "duckdb/planner/filter/conjunction_filter.hpp"
-#include "duckdb/planner/expression_iterator.hpp"
+
 #include "duckdb/catalog/catalog_entry/table_catalog_entry.hpp"
 #include "duckdb/function/table/table_scan.hpp"
+#include "duckdb/planner/expression/list.hpp"
+#include "duckdb/planner/expression_iterator.hpp"
+#include "duckdb/planner/filter/conjunction_filter.hpp"
+#include "duckdb/planner/filter/constant_filter.hpp"
+#include "duckdb/planner/operator/list.hpp"
 #include "duckdb/planner/operator/logical_get.hpp"
 #include "duckdb/storage/data_table.hpp"
-#include "duckdb/planner/filter/constant_filter.hpp"
 
 namespace duckdb {
 
@@ -80,6 +81,10 @@ RelationStats RelationStatisticsHelper::ExtractGetStats(LogicalGet &get, ClientC
 	for (idx_t i = 0; i < get.column_ids.size(); i++) {
 		bool have_distinct_count_stats = false;
 		if (get.function.statistics) {
+			if (get.ordinality_column_idx != 0 && i == get.ordinality_column_idx) {
+				// skip the ordinality column
+				continue;
+			}
 			column_statistics = get.function.statistics(context, get.bind_data.get(), get.column_ids[i]);
 			if (column_statistics && have_catalog_table_statistics) {
 				auto column_distinct_count = DistinctCount({column_statistics->GetDistinctCount(), true});

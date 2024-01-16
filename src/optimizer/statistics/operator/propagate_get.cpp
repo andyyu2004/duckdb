@@ -40,6 +40,10 @@ unique_ptr<NodeStatistics> StatisticsPropagator::PropagateStatistics(LogicalGet 
 		return std::move(node_stats);
 	}
 	for (idx_t i = 0; i < get.column_ids.size(); i++) {
+		if (get.ordinality_column_idx != 0 && i == get.ordinality_column_idx) {
+			// skip the ordinality column
+			continue;
+		}
 		auto stats = get.function.statistics(context, get.bind_data.get(), get.column_ids[i]);
 		if (stats) {
 			ColumnBinding binding(get.table_index, i);
